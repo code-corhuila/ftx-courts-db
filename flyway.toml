@@ -1,0 +1,18 @@
+# Flyway configuration of ftx-courts-db (Annex A "Con Flyway" and Annex J.6).
+# The connection is NOT here: Flyway reads FLYWAY_URL, FLYWAY_USER and
+# FLYWAY_PASSWORD from the environment (deploy/compose.yml and the CI).
+[flyway]
+locations = ["filesystem:01_ddl", "filesystem:02_dml", "filesystem:03_dcl", "filesystem:04_tcl"]
+defaultSchema = "courts"
+validateMigrationNaming = true   # a badly named file fails instead of being ignored
+cleanDisabled = true             # clean drops everything: this flow never needs it
+
+# In the TOML format, schemas and connectRetries belong to the environment.
+[environments.default]
+# Annex J.6: own schema, so the control table is courts.flyway_schema_history
+# and never collides with the control table of another domain in the single database.
+schemas = ["courts"]
+connectRetries = 10              # waits for the single instance to accept connections
+
+[flyway.postgresql.transactional]
+lock = false                     # allows CREATE INDEX CONCURRENTLY in future migrations
