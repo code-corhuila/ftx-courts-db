@@ -24,7 +24,7 @@ jobs:
         env:
           POSTGRES_DB: ftx
           POSTGRES_USER: ci_admin
-          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}  # changes on every run; never a fixed credential
         ports: ["5432:5432"]
         options: >-
           --health-cmd "pg_isready -U ci_admin -d ftx"
@@ -34,7 +34,7 @@ jobs:
       PGPORT: "5432"
       PGDATABASE: ftx
       PGUSER: ci_admin
-      PGPASSWORD: ci-only-password
+      PGPASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - uses: actions/checkout@v4
 
@@ -42,14 +42,14 @@ jobs:
         run: docker pull flyway/flyway:10.22.0
 
       - name: Simulate ftx-infra-postgres (creates courts_app, as its init script does)
-        run: psql -v ON_ERROR_STOP=1 -c "CREATE ROLE courts_app LOGIN PASSWORD 'ci-only-password'"
+        run: psql -v ON_ERROR_STOP=1 -c "CREATE ROLE courts_app LOGIN PASSWORD '$(openssl rand -hex 16)'"
 
       - name: Rebuild check (migrate, re-run, rollback, migrate again)
         env:
           FLYWAY: >-
             docker run --rm --network host -v ${{ github.workspace }}:/workspace:ro
             flyway/flyway:10.22.0 -workingDirectory=/workspace -configFiles=flyway.toml
-            -url=jdbc:postgresql://localhost:5432/ftx -user=ci_admin -password=ci-only-password
+            -url=jdbc:postgresql://localhost:5432/ftx -user=ci_admin -password=ci-${{ github.run_id }}-${{ github.run_attempt }}
           PSQL: psql
         run: sh tests/rebuild.sh
 
