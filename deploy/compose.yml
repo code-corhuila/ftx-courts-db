@@ -1,0 +1,16 @@
+
+services:
+  courts-db-migrate:
+    image: flyway/flyway:10.22.0
+    command: ["migrate"]
+    volumes:
+      - ..:/flyway/sql:ro
+    environment:
+      FLYWAY_URL: ${FLYWAY_URL:?Set FLYWAY_URL}
+      FLYWAY_USER: ${FLYWAY_USER:?Set FLYWAY_USER}
+      FLYWAY_PASSWORD: ${FLYWAY_PASSWORD:?Set FLYWAY_PASSWORD}
+      FLYWAY_SCHEMAS: courts
+      FLYWAY_DEFAULT_SCHEMA: courts
+      FLYWAY_LOCATIONS: filesystem:/flyway/sql/01_ddl,filesystem:/flyway/sql/03_dcl
+      FLYWAY_VALIDATE_MIGRATION_NAMING: "true"
+      FLYWAY_CLEAN_DISABLED: "true"

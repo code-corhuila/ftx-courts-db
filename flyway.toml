@@ -1,0 +1,10 @@
+
+[flyway]
+locations = ["filesystem:01_ddl", "filesystem:03_dcl"]
+defaultSchema = "courts"
+validateMigrationNaming = true
+cleanDisabled = true
+
+[environments.default]
+schemas = ["courts"]
+connectRetries = 10

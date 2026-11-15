@@ -1,0 +1,65 @@
+﻿
+name: courts-db-ci
+
+on:
+  pull_request:
+    branches: [develop, qa]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: ftx
+          POSTGRES_USER: ci_admin
+          POSTGRES_PASSWORD: ci-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci_admin -d ftx"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create domain login role
+        run: |
+          PGPASSWORD=ci-only-password psql \
+            -h localhost \
+            -U ci_admin \
+            -d ftx \
+            -v ON_ERROR_STOP=1 \
+            -c "CREATE ROLE courts_app LOGIN PASSWORD 'ci-only-password';"
+
+      - name: Run Flyway migrations
+        run: |
+          docker run --rm --network host \
+            -v "$GITHUB_WORKSPACE:/flyway/sql:ro" \
+            flyway/flyway:10.22.0 \
+            -url=jdbc:postgresql://localhost:5432/ftx \
+            -user=ci_admin \
+            -password=ci-only-password \
+            -defaultSchema=courts \
+            -locations=filesystem:/flyway/sql/01_ddl,filesystem:/flyway/sql/03_dcl \
+            migrate
+
+      - name: Verify schema
+        env:
+          PGPASSWORD: ci-only-password
+        run: |
+          psql \
+            -h localhost \
+            -U ci_admin \
+            -d ftx \
+            -v ON_ERROR_STOP=1 \
+            -f tests/verify.sql
