@@ -1,6 +1,6 @@
 
 [flyway]
-locations = ["filesystem:01_ddl", "filesystem:03_dcl"]
+locations = ["filesystem:01_ddl", "filesystem:02_dml", "filesystem:03_dcl"]
 defaultSchema = "courts"
 validateMigrationNaming = true
 cleanDisabled = true
